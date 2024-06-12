@@ -3,6 +3,10 @@ import os
 import subprocess
 import logging
 
+from awscliv2.installers import install_multiplatform
+
+# Install AWS CLI locally, otherwise the Python wrapper falls back to using Docker
+install_multiplatform()
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,11 @@
-torch
 accelerate
 awscliv2
 datasets
 deepspeed
-flash_attn
+# Flash Attention 2 requires PyTorch to be installed first
+# See https://github.com/Dao-AILab/flash-attention/issues/246
+#flash_attn
 peft
+ray[train]
+torch
 transformers

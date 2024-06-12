@@ -1,0 +1,8 @@
+torch
+accelerate
+awscliv2
+datasets
+deepspeed
+flash_attn
+peft
+transformers

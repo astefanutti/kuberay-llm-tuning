@@ -1,7 +1,11 @@
 accelerate
 awscliv2
 datasets
-deepspeed
+# There is a regression causing "Expected all tensors to be on the same device,
+# but found at least two devices" error, when the ZeRO3 + ZeRO Offload features are enabled
+# See https://github.com/microsoft/DeepSpeed/issues/5469
+#deepspeed
+git+https://github.com/microsoft/DeepSpeed.git
 # Flash Attention 2 requires PyTorch to be installed first
 # See https://github.com/Dao-AILab/flash-attention/issues/246
 #flash_attn

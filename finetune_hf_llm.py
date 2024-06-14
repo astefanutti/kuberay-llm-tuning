@@ -290,7 +290,7 @@ def training_function(kwargs: dict):
         torch_dtype=torch.bfloat16,
         # `use_cache=True` is incompatible with gradient checkpointing.
         use_cache=False,
-        use_flash_attention_2=True,
+        attn_implementation="flash_attention_2",
     )
     print(f"Done loading model in {time.time() - s} seconds.")
 

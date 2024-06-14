@@ -67,6 +67,9 @@ do
     elif [[ "$key" == "--eval-batch-size-per-device" ]]; then
         params+=("--eval-batch-size-per-device");
         params+=("$value");
+    elif [[ "$key" == "--storage-path" ]]; then
+        params+=("--storage-path");
+        params+=("$value");
     fi
 done
 

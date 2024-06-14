@@ -5,11 +5,12 @@ import json
 import math
 import os
 from pathlib import Path
-import re
 import tempfile
 import time
 import tree
 from typing import Tuple
+import urllib
+from urllib.parse import urljoin
 
 try:
     import deepspeed  # noqa: F401
@@ -43,6 +44,8 @@ from utils import (
     get_download_path,
 )
 
+urllib.parse.uses_relative.append("s3")
+urllib.parse.uses_netloc.append("s3")
 
 OPTIM_BETAS = (0.9, 0.999)
 OPTIM_EPS = 1e-8
@@ -250,7 +253,7 @@ def training_function(kwargs: dict):
     batch_size = int(config["batch_size"])
     gradient_accumulation_steps = int(config["gradient_accumulation_steps"])
 
-    # Get deepspeed config to setup the batch size per device
+    # Get deepspeed config to set up the batch size per device
     ds_plugin = config["ds_plugin"]
     ds_plugin.hf_ds_config.config["train_micro_batch_size_per_gpu"] = batch_size
 
@@ -608,6 +611,8 @@ def parse_args():
 
     parser.add_argument("--test_path", type=str, help="Path to testing jsonl file")
 
+    parser.add_argument("--storage-path", type=str, help="Path to results and checkpoints storage")
+
     parser.add_argument(
         "--special_token_path", type=str, help="Path to token json file"
     )
@@ -670,7 +675,6 @@ def parse_args():
 
 
 def main():
-
     args = parse_args()
 
     if not args.output_dir:
@@ -726,8 +730,7 @@ def main():
             "special_tokens": special_tokens,
         },
         run_config=train.RunConfig(
-            # FIXME
-            # storage_path=f"s3://XXX/{args.model_name}",
+            storage_path=urljoin(args.storage_path, args.model_name),
             checkpoint_config=train.CheckpointConfig(
                 num_to_keep=args.num_checkpoints_to_keep,
                 checkpoint_score_attribute="perplexity",

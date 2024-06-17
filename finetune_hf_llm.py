@@ -567,107 +567,70 @@ def training_function(kwargs: dict):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Simple example of training script.")
-    parser.add_argument(
-        "--mx",
-        type=str,
-        default="bf16",
-        choices=["no", "fp16", "bf16", "fp8"],
-        help="Whether to use mixed precision. Choose"
-        "between fp16 and bf16 (bfloat16). Bf16 requires PyTorch >= 1.10."
-        "and an Nvidia Ampere GPU.",
-    )
+    parser = argparse.ArgumentParser(description="LLM fine-tuning with DeepSpeed")
 
-    parser.add_argument(
-        "--batch-size-per-device",
-        "-bs",
-        type=int,
-        default=16,
-        help="Batch size to use per device.",
-    )
+    parser.add_argument("--model-name", type=str, default="meta-llama/Llama-2-7b-chat-hf")
 
-    parser.add_argument(
-        "--stop-perplexity",
-        default=0,
-        type=float,
-        help="Target perplexity to reach after which to stop training. Default is 0. "
-        "If 0, training will not stop on perplexity.",
-    )
+    parser.add_argument("--train-path", type=str, default="./data/train.jsonl",
+                        help="Path to training jsonl file")
 
-    parser.add_argument(
-        "--eval-batch-size-per-device",
-        type=int,
-        default=64,
-        help="Batch size to use per device (For evaluation).",
-    )
+    parser.add_argument("--test-path", type=str, default="./data/test.jsonl",
+                        help="Path to testing jsonl file")
 
-    parser.add_argument(
-        "--num-devices", "-nd", type=int, default=4, help="Number of devices to use."
-    )
-    parser.add_argument(
-        "--grad_accum", type=int, default=1, help="Gradient accumulation steps."
-    )
-    parser.add_argument("--train_path", type=str, help="Path to training jsonl file")
+    parser.add_argument("--special-token-path", type=str, default="./data/tokens.json",
+                        help="Path to token json file")
 
-    parser.add_argument("--test_path", type=str, help="Path to testing jsonl file")
+    parser.add_argument("--num-devices", "-nd", type=int, default=4,
+                        help="Number of devices to use.")
 
-    parser.add_argument("--storage-path", type=str, help="Path to results and checkpoints storage")
+    parser.add_argument("--mx", type=str, choices=["no", "fp16", "bf16", "fp8"], default="bf16",
+                        help="Whether to use mixed precision. Choose between fp16 and bf16 (bfloat16). "
+                             "Bf16 requires PyTorch >= 1.10 and an Nvidia Ampere GPU.")
 
-    parser.add_argument(
-        "--special_token_path", type=str, help="Path to token json file"
-    )
-    parser.add_argument(
-        "--no-grad-ckpt",
-        action="store_true",
-        help="If passed, will not use gradient checkpointing.",
-    )
-    parser.add_argument("--output_dir", type=str, help="Path to output directory.")
+    parser.add_argument("--ds-config", type=str, default="./deepspeed_configs/zero_3_llama_2_7b.json",
+                        help="Deepspeed config json to use.")
 
-    parser.add_argument(
-        "--model_name", default="meta-llama/Llama-2-7b-chat-hf", type=str
-    )
-    parser.add_argument(
-        "--num-epochs", type=int, default=1, help="Number of epochs to train for."
-    )
-    parser.add_argument(
-        "--num-checkpoints-to-keep",
-        type=int,
-        help=(
-            "Number of checkpoints to keep, if None, all checkpoints will be kept, "
-            "if set to n>=1, the top n checkpoint with min. evaluation perplexity "
-            "will be kept."
-        ),
-        default=None,
-    )
-    parser.add_argument("--lr", type=float, default=5e-6, help="Learning rate to use.")
+    parser.add_argument("--lora", action="store_true", default=False,
+                        help="If passed, will enable parameter efficient fine-tuning with LoRA.")
 
-    parser.add_argument(
-        "--ctx-len",
-        type=int,
-        default=512,
-        help="Maximum context length for the model input sequences.",
-    )
+    parser.add_argument("--num-epochs", type=int, default=1,
+                        help="Number of epochs to train for.")
 
-    parser.add_argument(
-        "--as-test",
-        action="store_true",
-        help="If passed, will run the script in test mode.",
-    )
+    parser.add_argument("--lr", type=float, default=1e-4,
+                        help="Learning rate to use.")
 
-    parser.add_argument(
-        "--ds-config",
-        type=str,
-        default="./deepspeed_configs/zero_3_llama_2_7b.json",
-        help="Deepspeed config json to use.",
-    )
+    parser.add_argument("--ctx-len", type=int, default=512,
+                        help="Maximum context length for the model input sequences.")
 
-    parser.add_argument(
-        "--lora",
-        action="store_true",
-        default=False,
-        help="If passed, will enable parameter efficient fine-tuning with LoRA ("
-        "https://arxiv.org/pdf/2106.09685.pdf).",
-    )
+    parser.add_argument("--batch-size-per-device", "-bs", type=int, default=16,
+                        help="Batch size to use per device.")
+
+    parser.add_argument("--eval-batch-size-per-device", type=int, default=64,
+                        help="Batch size to use per device (For evaluation).")
+
+    parser.add_argument("--grad-accum", type=int, default=1,
+                        help="Gradient accumulation steps.")
+
+    parser.add_argument("--output-dir", type=str, default="/tmp",
+                        help="Path to output directory.")
+
+    parser.add_argument("--storage-path", type=str,
+                        help="Path to results and checkpoints storage")
+
+    parser.add_argument("--no-grad-ckpt", action="store_true",
+                        help="If passed, will not use gradient checkpointing.")
+
+    parser.add_argument("--num-checkpoints-to-keep", type=int, default=1,
+                        help="Number of checkpoints to keep, if None, all checkpoints will be kept, "
+                             "if set to n>=1, the top n checkpoint with min. evaluation perplexity "
+                             "will be kept.")
+
+    parser.add_argument("--stop-perplexity", type=float, default=0,
+                        help="Target perplexity to reach after which to stop training. Default is 0. "
+                             "If 0, training will not stop on perplexity.")
+
+    parser.add_argument("--as-test", action="store_true",
+                        help="If passed, will run the script in test mode.")
 
     args = parser.parse_args()
 
@@ -678,7 +641,7 @@ def main():
     args = parse_args()
 
     if not args.output_dir:
-        raise ValueError("--output_dir must be specified")
+        raise ValueError("--output-dir must be specified")
 
     # update the config with args so that we have access to them.
     config = vars(args)

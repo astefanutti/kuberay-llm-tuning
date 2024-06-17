@@ -64,6 +64,9 @@ do
         # Lora usually requires a lower learning rate
         params+=("--lr");
         params+=("1e-4");
+    elif [[ "$key" == "--batch-size-per-device" ]]; then
+        params+=("--batch-size-per-device");
+        params+=("$value");
     elif [[ "$key" == "--eval-batch-size-per-device" ]]; then
         params+=("--eval-batch-size-per-device");
         params+=("$value");
